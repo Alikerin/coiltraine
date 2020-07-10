@@ -89,7 +89,7 @@ Setup the scenario runner challenge repository by setting the path to your CARLA
 folder.
 
     cd scenario_runner
-    bash setup_environment --carla-root <path_to_carla_root_folder>
+    bash setup_environment.sh --carla-root <path_to_carla_root_folder>
 
 
 Export the coiltraine path to the PYTHONPATH:
