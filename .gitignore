@@ -102,3 +102,9 @@ ENV/
 
 # pycharm
 .idea
+
+_*/
+*.MP4
+datasets/
+output_images/
+results/
