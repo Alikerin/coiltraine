@@ -8,9 +8,11 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 import scipy
-from scipy.misc import imresize
+# from scipy.misc import imresize
 import torch
+from PIL import Image
 
 from coilutils.drive_utils import checkpoint_parse_configuration_file
 from configs import g_conf, merge_with_yaml
@@ -137,14 +139,16 @@ class CoILBaseline(AutonomousAgent):
             att = att / att.max()
             att = cmap(att)
             att = np.delete(att, 3, 2)
-            attentions.append(imresize(att, [88, 200]))
+            attentions.append(cv2.resize(att, [88, 200]))
+            # attentions.append(np.array(Image.fromarray(att).resize([88, 200])))
         return attentions
 
     def _process_sensors(self, sensor):
         sensor = sensor[:, :, 0:3]  # BGRA->BRG drop alpha channel
         sensor = sensor[:, :, ::-1]  # BGR->RGB
         sensor = sensor[g_conf.IMAGE_CUT[0]:g_conf.IMAGE_CUT[1], :, :]  # crop
-        sensor = scipy.misc.imresize(sensor, (g_conf.SENSORS['rgb'][1], g_conf.SENSORS['rgb'][2]))
+        sensor = cv2.resize(sensor, (g_conf.SENSORS['rgb'][1], g_conf.SENSORS['rgb'][2]))
+        # sensor = np.array(Image.fromarray(sensor).resize((g_conf.SENSORS['rgb'][1], g_conf.SENSORS['rgb'][2])))
         self.latest_image = sensor
 
         sensor = np.swapaxes(sensor, 0, 1)

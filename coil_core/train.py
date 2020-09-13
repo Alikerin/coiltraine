@@ -168,8 +168,10 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
                     'optimizer': optimizer.state_dict(),
                     'best_loss_iter': best_loss_iter
                 }
-                torch.save(state, os.path.join('_logs', exp_batch, exp_alias
-                                               , 'checkpoints', str(iteration) + '.pth'))
+                filename = os.path.join('_logs', exp_batch, exp_alias,
+                                        'checkpoints', str(iteration) + '.pth')
+                print("Saving model checkpoint to {}".format(filename))
+                torch.save(state, filename)
 
             """
                 ################################################

@@ -99,7 +99,7 @@ def merge_with_yaml(yaml_filename):
     global _g_conf
     with open(yaml_filename, 'r') as f:
 
-        yaml_file = yaml.load(f)
+        yaml_file = yaml.load(f, Loader=yaml.FullLoader)
 
         yaml_cfg = AttributeDict(yaml_file)
 

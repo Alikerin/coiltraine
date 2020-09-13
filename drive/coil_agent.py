@@ -5,9 +5,13 @@ import os
 import glob
 import torch
 
-from scipy.misc import imresize
+#from scipy.misc import imresize
 from PIL import Image
+import cv2
 
+# import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 try:
@@ -119,7 +123,8 @@ class CoILAgent(object):
             att = att / att.max()
             att = cmap(att)
             att = np.delete(att, 3, 2)
-            attentions.append(imresize(att, [88, 200]))
+            attentions.append(cv2.resize(att, (200, 88)))
+            #attentions.append(imresize(att, [88, 200]))
         return attentions
 
     def _process_sensors(self, sensors):
@@ -132,7 +137,7 @@ class CoILAgent(object):
             else:
                 sensor = sensors[name].data[g_conf.IMAGE_CUT[0]:g_conf.IMAGE_CUT[1], ...]
 
-            sensor = scipy.misc.imresize(sensor, (size[1], size[2]))
+            sensor = cv2.resize(sensor, (size[2], size[1]))
 
             self.latest_image = sensor
 

@@ -334,7 +334,7 @@ class HUD(object):
         max_col = max(1.0, max(collision))
         collision = [x / max_col for x in collision]
         vehicles = world.world.get_actors().filter('vehicle.*')
-        
+
         # TODO Reduce the used info test.
         self._info_text = [
             'Server:  % 16d FPS' % self.server_fps,
@@ -649,6 +649,9 @@ def game_loop(args, agent):
                 print(control)
                 world.apply_control(control)
                 if args.output_folder is not None:
+                    scipy.misc.imsave(os.path.join(args.output_folder,
+                                                   'surface' + str(total_images) + '.png'),
+                                      sensor_data['hudcamera'].data)
                     scipy.misc.imsave(os.path.join(args.output_folder,
                                                    'image' + str(total_images) + '.png'),
                                       agent.latest_image)

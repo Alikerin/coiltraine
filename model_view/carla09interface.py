@@ -208,7 +208,7 @@ class World(object):
         cam_pos_index = self.camera_manager._transform_index \
             if self.camera_manager is not None else 0
 
-        blueprint = self.world.get_blueprint_library().find('vehicle.ford.mustang')
+        blueprint = self.world.get_blueprint_library().find('vehicle.mustang.mustang')
         blueprint.set_attribute('role_name', 'hero')
         if blueprint.has_attribute('color'):
             color = random.choice(blueprint.get_attribute('color').recommended_values)
@@ -347,6 +347,7 @@ class KeyboardControl(object):
                 elif event.key == K_h or (
                         event.key == K_SLASH and pygame.key.get_mods() & KMOD_SHIFT):
                     world.hud.help.toggle()
+                    world.camera_manager.toggle_recording()
                 elif event.key == K_LEFT:
                     self._command_cache = 3.0
                 elif event.key == K_RIGHT:
@@ -821,7 +822,7 @@ def game_loop(args, agent):
               "   CONDITIONAL IMITATION LEARNING VISUALIZATION SYSTEM \n"
               "    ON THE BOTTOM CORNER WE SHOW THE FIRST PERSON VIEW \n"
               "        AND THE ACTIVATIONS OF THE FIRST 3 LAYERS \n "
-                                "\n"        
+                                "\n"
               " Use ARROWS  keys to give high level commands to the Agent"
                                 "\n"
               "###########################################################\n")

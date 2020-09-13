@@ -405,4 +405,3 @@ class CoILDataset(Dataset):
             inputs_vec.append(data[input_name])
 
         return torch.cat(inputs_vec, 1)
-
