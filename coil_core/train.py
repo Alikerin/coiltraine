@@ -85,7 +85,6 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
         # Define the dataset. This structure is has the __get_item__ redefined in a way
         # that you can access the positions from the root directory as a in a vector.
         full_dataset = os.path.join(os.environ["COIL_DATASET_PATH"], g_conf.TRAIN_DATASET_NAME)
-
         # By instantiating the augmenter we get a callable that augment images and transform them
         # into tensors.
         augmenter = Augmenter(g_conf.AUGMENTATION)
@@ -111,13 +110,11 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
             accumulated_time = 0
             loss_window = []
 
-        print ("Before the loss")
 
         criterion = Loss(g_conf.LOSS_FUNCTION)
 
         # Loss time series window
         for data in data_loader:
-
             # Basically in this mode of execution, we validate every X Steps, if it goes up 3 times,
             # add a stop on the _logs folder that is going to be read by this process
             if g_conf.FINISH_ON_VALIDATION_STALE is not None and \
@@ -139,6 +136,7 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
             controls = data['directions']
             # The output(branches) is a list of 5 branches results, each branch is with size [120,3]
             model.zero_grad()
+
             branches = model(torch.squeeze(data['rgb'].cuda()),
                              dataset.extract_inputs(data).cuda())
             loss_function_params = {
@@ -150,6 +148,7 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
                 'variable_weights': g_conf.VARIABLE_WEIGHT
             }
             loss, _ = criterion(loss_function_params)
+            print(loss.item())
             loss.backward()
             optimizer.step()
             """

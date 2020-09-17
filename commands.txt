@@ -1,0 +1,7 @@
+Run CoiLTraine Training:
+conda activate coiltraine
+export CARLA_ROOT="/home/ubuntu/coiltraine/carla/CARLA_0.9.6"
+export PYTHONPATH=${CARLA_ROOT}/PythonAPI/carla:$PYTHONPATH
+export COIL_DATASET_PATH="/home/ubuntu/LearningByCheating/just_work5"
+export PYTHONPATH="/home/ubuntu/coiltraine/carla/CARLA_0.9.6":"/home/ubuntu/coiltraine/scenario_runner":$PYTHONPATH
+python3 coiltraine.py --single-process train -e resnet34imnet --folder baselines --gpus 0
