@@ -148,7 +148,6 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
                 'variable_weights': g_conf.VARIABLE_WEIGHT
             }
             loss, _ = criterion(loss_function_params)
-            print(loss.item())
             loss.backward()
             optimizer.step()
             """
