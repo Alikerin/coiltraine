@@ -1,3 +1,11 @@
+# @Author: Ibrahim Salihu Yusuf <yusuf>
+# @Date:   2020-09-17T07:01:39+01:00
+# @Email:  sibrahim1396@gmail.com
+# @Last modified by:   yusuf
+# @Last modified time: 2020-09-17T07:24:50+01:00
+
+
+
 import os
 import glob
 import traceback
@@ -51,255 +59,94 @@ def get_episode_weather(episode):
 
 
 class CoILDataset(Dataset):
-    """ The conditional imitation learning dataset"""
+    def __init__(self, root_dir, transform=None, preload_name=None, max_frames=None):
 
-    def __init__(self, root_dir, transform=None, preload_name=None):
-        # Setting the root directory for this dataset
-        self.root_dir = root_dir
-        # We add to the preload name all the remove labels
-        if g_conf.REMOVE is not None and g_conf.REMOVE is not "None":
-            name, self._remove_params = parse_remove_configuration(g_conf.REMOVE)
-            self.preload_name = preload_name + '_' + name
-            self._check_remove_function = getattr(splitter, name)
-        else:
-            self._check_remove_function = lambda _, __: False
-            self._remove_params = []
-            self.preload_name = preload_name
-
-        print("preload Name ", self.preload_name)
-
-        if self.preload_name is not None and os.path.exists(
-                os.path.join('_preloads', self.preload_name + '.npy')):
-            print(" Loading from NPY ")
-            self.sensor_data_names, self.measurements = np.load(
-                os.path.join('_preloads', self.preload_name + '.npy'))
-            print(self.sensor_data_names)
-        else:
-            self.sensor_data_names, self.measurements = self._pre_load_image_folders(root_dir)
-
-
-        print("preload Name ", self.preload_name)
-
+        self.image_names = []
+        self.measurements = []
+        self.txn = []
+        self.full_path = []
         self.transform = transform
-        self.batch_read_number = 0
 
-    def __len__(self):
-        return len(self.measurements)
+        n_episodes = 0
 
-    def __getitem__(self, index):
-        """
-        Get item function used by the dataset loader
-        returns all the measurements with the desired image.
+        for full_path in sorted(glob.glob('%s/**' % root_dir), reverse=True):
+            txn = lmdb.open(
+                    full_path,
+                    max_readers=1, readonly=True,
+                    lock=False, readahead=False, meminit=False).begin(write=False)
 
-        Args:
-            index:
+            n = int(txn.get('len'.encode())) #- self.gap * self.n_step
 
-        Returns:
+            for i in range(n):
+                if max_frames and len(self) >= max_frames:
+                    break
+                for _dir in ["leftrgb_", "rightrgb_", "centralrgb_"]:
+                    self.image_names.append(_dir+"%04d" % i)
+                    self.measurements.append('measurements_%04d' % i)
+                    self.txn.append(txn)
+                    self.full_path = full_path
 
-        """
-        try:
-            img_path = os.path.join(self.root_dir,
-                                    self.sensor_data_names[index].split('/')[-2],
-                                    self.sensor_data_names[index].split('/')[-1])
+            n_episodes += 1
 
-            img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-            # Apply the image transformation
-            if self.transform is not None:
-                boost = 1
-                img = self.transform(self.batch_read_number * boost, img)
-            else:
-                img = img.transpose(2, 0, 1)
-
-            img = img.astype(np.float)
-            img = torch.from_numpy(img).type(torch.FloatTensor)
-            img = img / 255.
-
-            measurements = self.measurements[index].copy()
-            for k, v in measurements.items():
-                v = torch.from_numpy(np.asarray([v, ]))
-                measurements[k] = v.float()
-
-            measurements['rgb'] = img
-
-            self.batch_read_number += 1
-        except AttributeError:
-            print ("Blank IMAGE")
-
-            measurements = self.measurements[0].copy()
-            for k, v in measurements.items():
-                v = torch.from_numpy(np.asarray([v, ]))
-                measurements[k] = v.float()
-            measurements['steer'] = 0.0
-            measurements['throttle'] = 0.0
-            measurements['brake'] = 0.0
-            measurements['rgb'] = np.zeros(3, 88, 200)
-
-        return measurements
-
-    def is_measurement_partof_experiment(self, measurement_data):
-
-        # If the measurement data is not removable is because it is part of this experiment dataa
-        return not self._check_remove_function(measurement_data, self._remove_params)
-
-    def _get_final_measurement(self, speed, measurement_data, angle,
-                               directions, avaliable_measurements_dict):
-        """
-        Function to load the measurement with a certain angle and augmented direction.
-        Also, it will choose if the brake is gona be present or if acceleration -1,1 is the default.
-
-        Returns
-            The final measurement dict
-        """
-        if angle != 0:
-            measurement_augmented = self.augment_measurement(copy.copy(measurement_data), angle,
-                                                             3.6 * speed,
-                                                 steer_name=avaliable_measurements_dict['steer'])
-        else:
-            # We have to copy since it reference a file.
-            measurement_augmented = copy.copy(measurement_data)
-
-        if 'gameTimestamp' in measurement_augmented:
-            time_stamp = measurement_augmented['gameTimestamp']
-        else:
-            time_stamp = measurement_augmented['elapsed_seconds']
-
-        final_measurement = {}
-        # We go for every available measurement, previously tested
-        # and update for the measurements vec that is used on the training.
-        for measurement, name_in_dataset in avaliable_measurements_dict.items():
-            # This is mapping the name of measurement in the target dataset
-            final_measurement.update({measurement: measurement_augmented[name_in_dataset]})
-
-        # Add now the measurements that actually need some kind of processing
-        final_measurement.update({'speed_module': speed / g_conf.SPEED_FACTOR})
-        final_measurement.update({'directions': directions})
-        final_measurement.update({'game_time': time_stamp})
-
-        return final_measurement
-
-    def _pre_load_image_folders(self, path):
-        """
-        Pre load the image folders for each episode, keep in mind that we only take
-        the measurements that we think that are interesting for now.
-
-        Args
-            the path for the dataset
-
-        Returns
-            sensor data names: it is a vector with n dimensions being one for each sensor modality
-            for instance, rgb only dataset will have a single vector with all the image names.
-            float_data: all the wanted float data is loaded inside a vector, that is a vector
-            of dictionaries.
-
-        """
-
-        episodes_list = glob.glob(os.path.join(path, 'episode_*'))
-        sort_nicely(episodes_list)
-        # Do a check if the episodes list is empty
-        if len(episodes_list) == 0:
-            raise ValueError("There are no episodes on the training dataset folder %s" % path)
-
-        sensor_data_names = []
-        float_dicts = []
-
-        number_of_hours_pre_loaded = 0
-
-        # Now we do a check to try to find all the
-        for episode in episodes_list:
-
-            print('Episode ', episode)
-
-            available_measurements_dict = data_parser.check_available_measurements(episode)
-
-            if number_of_hours_pre_loaded > g_conf.NUMBER_OF_HOURS:
-                # The number of wanted hours achieved
+            if max_frames and len(self) >= max_frames:
                 break
 
-            # Get all the measurements from this episode
-            measurements_list = glob.glob(os.path.join(episode, 'measurement*'))
-            sort_nicely(measurements_list)
+        print('%s: %d frames, %d episodes.' % (dataset_path, len(self), n_episodes))
 
-            if len(measurements_list) == 0:
-                print("EMPTY EPISODE")
-                continue
+    def __len__(self):
+        return len(self.image_names)
 
-            # A simple count to keep track how many measurements were added this episode.
-            count_added_measurements = 0
+    def __getitem__(self, idx):
+        img_name = self.image_names[idx]
+        meas = self.measurements[idx]
+        lmdb_txn = self.txn[idx]
 
-            for measurement in measurements_list[:-3]:
+        img = np.frombuffer(lmdb_txn.get(img_name.encode()), np.uint8).reshape(600,800,3)
+        # Apply the image transformation
+        if self.transform is not None:
+            boost = 1
+            img = self.transform(self.batch_read_number * boost, img)
+        else:
+            img = img.transpose(2, 0, 1)
 
-                data_point_number = measurement.split('_')[-1].split('.')[0]
-
-                with open(measurement) as f:
-                    measurement_data = json.load(f)
-
-                # depending on the configuration file, we eliminated the kind of measurements
-                # that are not going to be used for this experiment
-                # We extract the interesting subset from the measurement dict
-
-                speed = data_parser.get_speed(measurement_data)
-
-                directions = measurement_data['directions']
-                final_measurement = self._get_final_measurement(speed, measurement_data, 0,
-                                                                directions,
-                                                                available_measurements_dict)
-
-                if self.is_measurement_partof_experiment(final_measurement):
-                    float_dicts.append(final_measurement)
-                    rgb = 'CentralRGB_' + data_point_number + '.png'
-                    sensor_data_names.append(os.path.join(episode.split('/')[-1], rgb))
-                    count_added_measurements += 1
-
-                # We do measurements for the left side camera
-                # We convert the speed to KM/h for the augmentation
-
-                # We extract the interesting subset from the measurement dict
-
-                final_measurement = self._get_final_measurement(speed, measurement_data, -30.0,
-                                                                directions,
-                                                                available_measurements_dict)
-
-                if self.is_measurement_partof_experiment(final_measurement):
-                    float_dicts.append(final_measurement)
-                    rgb = 'LeftRGB_' + data_point_number + '.png'
-                    sensor_data_names.append(os.path.join(episode.split('/')[-1], rgb))
-                    count_added_measurements += 1
-
-                # We do measurements augmentation for the right side cameras
-
-                final_measurement = self._get_final_measurement(speed, measurement_data, 30.0,
-                                                                directions,
-                                                                available_measurements_dict)
-
-                if self.is_measurement_partof_experiment(final_measurement):
-                    float_dicts.append(final_measurement)
-                    rgb = 'RightRGB_' + data_point_number + '.png'
-                    sensor_data_names.append(os.path.join(episode.split('/')[-1], rgb))
-                    count_added_measurements += 1
-
-            # Check how many hours were actually added
-
-            last_data_point_number = measurements_list[-4].split('_')[-1].split('.')[0]
-            number_of_hours_pre_loaded += (float(count_added_measurements / 10.0) / 3600.0)
-            print(" Loaded ", number_of_hours_pre_loaded, " hours of data")
+        img = img.astype(np.float)
+        img = torch.from_numpy(img).type(torch.FloatTensor)
+        img = img / 255.
 
 
-        # Make the path to save the pre loaded datasets
-        if not os.path.exists('_preloads'):
-            os.mkdir('_preloads')
-        # If there is a name we saved the preloaded data
-        if self.preload_name is not None:
-            np.save(os.path.join('_preloads', self.preload_name), [sensor_data_names, float_dicts])
+        measurement = np.frombuffer(lmdb_txn.get(meas.encode()), np.float32)
 
-        return sensor_data_names, float_dicts
+        ox, oy, oz, ori_ox, ori_oy, vx, vy, vz, ax, ay, az, pitch, roll, yaw, cmd, steer, throttle, brake, manual, gear  = measurement
 
-    def augment_directions(self, directions):
+        #calculate speed according to coiltraine/input/data_parser.py
+        speed = self.get_speed(vx, vy, vz, pitch, yaw)
 
-        if directions == 2.0:
-            if random.randint(0, 100) < 20:
-                directions = random.choice([3.0, 4.0, 5.0])
+        #aaugment measurement according to coiltraine/input/coil_dataset.py
+        if 'left' in img_name:
+            #augment for -30 degrees
+            steer = self.augment_measurement(steer, -30.0, speed)
+        elif 'right' in img_name:
+            #augment for 30 degrees
+            steer = self.augment_measurement(steer, 30.0, speed)
 
-        return directions
+        #return dictionary of measurement as seen in coiltraine/input/coil_dataset.py _get_final_measurement()
+        measurement = {}
+        measurement['position'] = torch.tensor([ox, oy, oz], dtype=torch.float32)
+        measurement['orientation']= torch.tensor([ori_ox, ori_oy], dtype=torch.float32)
+        measurement['velocity'] = torch.tensor([vx, vy, vz], dtype=torch.float32)
+        measurement['acceleration'] = torch.tensor([ax, ay, az], dtype=torch.float32)
+        measurement['command'] = torch.tensor(cmd, dtype=torch.float32)
+        measurement['steer'] = torch.tensor(steer, dtype=torch.float32)
+        measurement['throttle'] = torch.tensor(throttle, dtype=torch.float32)
+        measurement['brake'] = torch.tensor(brake, dtype=torch.float32)
+        measurement['manual'] = torch.tensor(manual, dtype=torch.float32)
+        measurement['gear'] = torch.tensor(gear, dtype=torch.float32)
+        measurement['speed_module'] = torch.tensor(speed / g_conf.SPEED_FACTOR, dtype=torch.float32)
+        measurement['game_time'] = torch.tensor(0.0, dtype=torch.float32)
+
+        measurement['rgb'] = img
+
+        return measurement
 
     def augment_steering(self, camera_angle, steer, speed):
         """
@@ -331,15 +178,25 @@ class CoILDataset(Dataset):
         # print('Angle', camera_angle, ' Steer ', old_steer, ' speed ', speed, 'new steer', steer)
         return steer
 
-    def augment_measurement(self, measurements, angle, speed, steer_name='steer'):
+    def augment_measurement(self, steer, angle, speed):
         """
             Augment the steering of a measurement dict
 
         """
-        new_steer = self.augment_steering(angle, measurements[steer_name],
-                                          speed)
-        measurements[steer_name] = new_steer
-        return measurements
+        new_steer = self.augment_steering(angle, steer, speed)
+        return new_steer
+
+    def orientation_vector(self, pitch, yaw):
+        pitch = np.deg2rad(pitch)
+        yaw = np.deg2rad(yaw)
+        orientation = np.array([np.cos(pitch)*np.cos(yaw), np.cos(pitch)*np.sin(yaw), np.sin(pitch)])
+        return orientation
+
+
+    def get_speed(self, vx, vy, vz, pitch, yaw):
+        vel_np = np.array([vx, vy, vz])
+        speed = np.dot(vel_np, self.orientation_vector(pitch, yaw))
+        return speed
 
     def controls_position(self):
         return np.where(self.meta_data[:, 0] == b'control')[0][0]
