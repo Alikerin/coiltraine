@@ -67,7 +67,7 @@ class CoILDataset(Dataset):
         self.txn = []
         self.full_path = []
         self.transform = transform
-
+        self.batch_read_number = 0
         n_episodes = 0
 
         for full_path in sorted(glob.glob('%s/**' % root_dir), reverse=True):
@@ -103,6 +103,8 @@ class CoILDataset(Dataset):
         lmdb_txn = self.txn[idx]
 
         img = np.frombuffer(lmdb_txn.get(img_name.encode()), np.uint8).reshape(600,800,3)
+        img = cv2.resize(img, dsize=(88, 200), interpolation=cv2.INTER_CUBIC)
+
         # Apply the image transformation
         if self.transform is not None:
             boost = 1
@@ -136,16 +138,17 @@ class CoILDataset(Dataset):
         measurement['orientation']= torch.tensor([ori_ox, ori_oy], dtype=torch.float32)
         measurement['velocity'] = torch.tensor([vx, vy, vz], dtype=torch.float32)
         measurement['acceleration'] = torch.tensor([ax, ay, az], dtype=torch.float32)
-        measurement['command'] = torch.tensor(cmd, dtype=torch.float32)
-        measurement['steer'] = torch.tensor(steer, dtype=torch.float32)
-        measurement['throttle'] = torch.tensor(throttle, dtype=torch.float32)
-        measurement['brake'] = torch.tensor(brake, dtype=torch.float32)
-        measurement['manual'] = torch.tensor(manual, dtype=torch.float32)
-        measurement['gear'] = torch.tensor(gear, dtype=torch.float32)
-        measurement['speed_module'] = torch.tensor(speed / g_conf.SPEED_FACTOR, dtype=torch.float32)
-        measurement['game_time'] = torch.tensor(0.0, dtype=torch.float32)
-
+        measurement['command'] = torch.tensor([cmd], dtype=torch.float32)
+        measurement['steer'] = torch.tensor([steer], dtype=torch.float32)
+        measurement['throttle'] = torch.tensor([throttle], dtype=torch.float32)
+        measurement['brake'] = torch.tensor([brake], dtype=torch.float32)
+        measurement['manual'] = torch.tensor([manual], dtype=torch.float32)
+        measurement['gear'] = torch.tensor([gear], dtype=torch.float32)
+        measurement['speed_module'] = torch.tensor([speed / g_conf.SPEED_FACTOR], dtype=torch.float32)
+        measurement['game_time'] = torch.tensor([0.0], dtype=torch.float32)
+        measurement['directions'] = torch.tensor([2.0], dtype=torch.float32)
         measurement['rgb'] = img
+        self.batch_read_number += 1
 
         return measurement
 
