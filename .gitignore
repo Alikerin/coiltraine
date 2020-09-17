@@ -110,4 +110,4 @@ output_images/
 results/
 CARLA/
 *.tar.gz
-scenario_runner/
+carla/

@@ -16,6 +16,7 @@ import copy
 import json
 import random
 import numpy as np
+import lmdb
 
 import torch
 import cv2
@@ -91,7 +92,7 @@ class CoILDataset(Dataset):
             if max_frames and len(self) >= max_frames:
                 break
 
-        print('%s: %d frames, %d episodes.' % (dataset_path, len(self), n_episodes))
+        print('%s: %d frames, %d episodes.' % (root_dir, len(self), n_episodes))
 
     def __len__(self):
         return len(self.image_names)
