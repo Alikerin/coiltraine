@@ -138,7 +138,7 @@ class CoILDataset(Dataset):
         measurement['orientation']= torch.tensor([ori_ox, ori_oy], dtype=torch.float32)
         measurement['velocity'] = torch.tensor([vx, vy, vz], dtype=torch.float32)
         measurement['acceleration'] = torch.tensor([ax, ay, az], dtype=torch.float32)
-        measurement['command'] = torch.tensor([cmd], dtype=torch.float32)
+        # measurement['command'] = torch.tensor([cmd], dtype=torch.float32)
         measurement['steer'] = torch.tensor([steer], dtype=torch.float32)
         measurement['throttle'] = torch.tensor([throttle], dtype=torch.float32)
         measurement['brake'] = torch.tensor([brake], dtype=torch.float32)
@@ -146,7 +146,7 @@ class CoILDataset(Dataset):
         measurement['gear'] = torch.tensor([gear], dtype=torch.float32)
         measurement['speed_module'] = torch.tensor([speed / g_conf.SPEED_FACTOR], dtype=torch.float32)
         measurement['game_time'] = torch.tensor([0.0], dtype=torch.float32)
-        measurement['directions'] = torch.tensor([2.0], dtype=torch.float32)
+        measurement['directions'] = torch.tensor([cmd], dtype=torch.float32)
         measurement['rgb'] = img
         self.batch_read_number += 1
 
