@@ -2,7 +2,7 @@
 # @Date:   2020-09-17T07:01:39+01:00
 # @Email:  sibrahim1396@gmail.com
 # @Last modified by:   yusuf
-# @Last modified time: 2020-09-17T07:24:50+01:00
+# @Last modified time: 2020-09-18T08:30:53+01:00
 
 
 
@@ -121,6 +121,16 @@ class CoILDataset(Dataset):
 
         ox, oy, oz, ori_ox, ori_oy, vx, vy, vz, ax, ay, az, pitch, roll, yaw, cmd, steer, throttle, brake, manual, gear  = measurement
 
+        #mapping for directions as defined in https://github.com/carla-simulator/data-collector/blob/master/carla/planner/planner.py
+        # to directions as defined in /carla_lbc/PythonAPI/agents/navigation from http://carla-assets-internal.s3.amazonaws.com/Releases/Linux/CARLA_0.9.6.tar.gz
+
+        directions_mapping = {
+            1: 3.0,
+            2: 4.0,
+            3: 5.0,
+            4: 2.0,
+            -1: 0.0
+        }
         #calculate speed according to coiltraine/input/data_parser.py
         speed = self.get_speed(vx, vy, vz, pitch, yaw)
 
@@ -146,7 +156,7 @@ class CoILDataset(Dataset):
         measurement['gear'] = torch.tensor([gear], dtype=torch.float32)
         measurement['speed_module'] = torch.tensor([speed / g_conf.SPEED_FACTOR], dtype=torch.float32)
         measurement['game_time'] = torch.tensor([0.0], dtype=torch.float32)
-        measurement['directions'] = torch.tensor([cmd], dtype=torch.float32)
+        measurement['directions'] = torch.tensor([directions_mapping[int(cmd)]], dtype=torch.float32)
         measurement['rgb'] = img
         self.batch_read_number += 1
 
