@@ -5,3 +5,4 @@ export PYTHONPATH=${CARLA_ROOT}/PythonAPI/carla:$PYTHONPATH
 export COIL_DATASET_PATH="/home/ubuntu/LearningByCheating/just_work5"
 export PYTHONPATH="/home/ubuntu/coiltraine/carla/CARLA_0.9.6":"/home/ubuntu/coiltraine/scenario_runner":$PYTHONPATH
 python3 coiltraine.py --single-process train -e resnet34imnet --folder baselines --gpus 0
+python3 coiltraine.py --folder nocrash --exp resnet34imnet10S1 --gpus 0 -de TestT1_Town01 -vd CoILVal1 --docker carlasim/carla:0.9.6
