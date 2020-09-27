@@ -102,7 +102,7 @@ class CoILDataset(Dataset):
         meas = self.measurements[idx]
         lmdb_txn = self.txn[idx]
 
-        img = np.frombuffer(lmdb_txn.get(img_name.encode()), np.uint8).reshape(600,800,3)
+        img = np.frombuffer(lmdb_txn.get(img_name.encode()), np.uint8).reshape(88,200,3)
         img = cv2.resize(img, dsize=(88, 200), interpolation=cv2.INTER_CUBIC)
 
         # Apply the image transformation
@@ -276,3 +276,7 @@ class CoILDataset(Dataset):
             inputs_vec.append(data[input_name])
 
         return torch.cat(inputs_vec, 1)
+
+    #doing nothing
+    def _pre_load_image_folders(self, path):
+        return self.image_name, self.measurements
