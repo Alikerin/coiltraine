@@ -94,7 +94,7 @@ def execute(gpu, exp_batch, exp_alias, suppress_output=True, number_of_workers=1
         dataset = CoILDataset(full_dataset, transform=augmenter,
                               preload_name=str(g_conf.NUMBER_OF_HOURS)
                                                + 'hours_' + g_conf.TRAIN_DATASET_NAME)
-        print ("Loaded dataset")
+        print ("Loaded dataset:{}".format(len(dataset)))
 
         data_loader = select_balancing_strategy(dataset, iteration, number_of_workers)
         model = CoILModel(g_conf.MODEL_TYPE, g_conf.MODEL_CONFIGURATION)

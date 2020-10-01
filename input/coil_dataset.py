@@ -92,7 +92,7 @@ class CoILDataset(Dataset):
             if max_frames and len(self) >= max_frames:
                 break
 
-        print('%s: %d frames, %d episodes.' % (root_dir, len(self), n_episodes))
+        print('%s: %d frames, %d episodes, %d hours.' % (root_dir, len(self), n_episodes, len(self)/(3*10*3600)))
 
     def __len__(self):
         return len(self.image_names)

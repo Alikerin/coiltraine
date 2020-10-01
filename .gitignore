@@ -111,3 +111,5 @@ results/
 CARLA/
 *.tar.gz
 carla/
+*/*.png
+_*/

@@ -208,7 +208,7 @@ class World(object):
         cam_pos_index = self.camera_manager._transform_index \
             if self.camera_manager is not None else 0
 
-        blueprint = self.world.get_blueprint_library().find('vehicle.mustang.mustang')
+        blueprint = self.world.get_blueprint_library().find('vehicle.ford.mustang')
         blueprint.set_attribute('role_name', 'hero')
         if blueprint.has_attribute('color'):
             color = random.choice(blueprint.get_attribute('color').recommended_values)
